@@ -1,0 +1,3 @@
+[submodule "ext/DxLib_LR2"]
+	path = ext/DxLib_LR2
+	url = https://github.com/MatVeiQaaa/DxLib_LR2.git
