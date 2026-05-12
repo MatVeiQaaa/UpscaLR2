@@ -1,4 +1,4 @@
-![Banner](.github/banner/banner.png)
+![Banner](.github/banner/banner.jpg)
 
 UpscaLR2 is an injected .dll for Lunatic Rave 2,
 which fixes fullscreen mode crashes and introduces
