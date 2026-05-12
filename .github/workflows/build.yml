@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+        
+      - name: Set up msbuild
+        uses: microsoft/setup-msbuild@v2
+        
+      - name: Integrate vcpkg
+        run: |
+            vcpkg integrate install
+        
+      - name: Build with msbuild
+        run: |
+          msbuild UpscaLR2.sln /t:Build /p:Configuration=Release /p:Platform=x86
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build
+          path: bin/x86/Release/UpscaLR2.dll
+          
+      - name: Publish release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "dev"
+          prerelease: true
+          title: "Last Commit Build"
+          files: |
+            bin/Release/x86/fmodex.dll
+            bin/Release/x86/UpscaLR2.dll
+            bin/Release/x86/UpscaLR2.pdb
