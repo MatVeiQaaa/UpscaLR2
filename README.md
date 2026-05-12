@@ -20,4 +20,5 @@ multiple upscaling methods to choose from.
 ## Special Thanks
 
 [nyannurs](https://www.twitch.tv/beachsidebunny), for being the reason this project exists.
+
 **Anonymous LR2 reverser**, for being the reason this project is possible.
