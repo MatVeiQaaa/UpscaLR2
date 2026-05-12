@@ -1,3 +1,5 @@
+#define NO_UNIMPLEMENTED
+
 #include <DxLibWrap.hpp>
 
 #include <ConfigManager.hpp>
@@ -9,8 +11,8 @@
 #include <safetyhook.hpp>
 
 static struct int2 {
-	int x;
-	int y;
+	int x = 0;
+	int y = 0;
 };
 
 static ConfigManager config("UpscaLR2.ini");
@@ -97,9 +99,14 @@ int OnMakeKeyInput(size_t MaxStrLength, int CancelValidFlag, int SingleCharOnlyF
 }
 
 static int2 resolutionCfg{};
+static int2 resolutionOrig{};
 static bool resolutionOverwrite = false;
 int OnSetGraphMode(int ScreenSizeX, int ScreenSizeY, int ColorBitDepth, int RefreshRate) {
+#ifdef NO_UNIMPLEMENTED
+	return SetGraphMode(ScreenSizeX, ScreenSizeY, ColorBitDepth, 9999);
+#else
 	static int2 resolution = [](int x, int y) {
+		resolutionOrig = { x, y };
 		int2 res{};
 		if (resolutionCfg.x == 0) {
 			config.WriteValue("ResolutionX", x, true);
@@ -115,9 +122,29 @@ int OnSetGraphMode(int ScreenSizeX, int ScreenSizeY, int ColorBitDepth, int Refr
 	}(ScreenSizeX, ScreenSizeY);
 	return resolutionOverwrite ? SetGraphMode(resolution.x, resolution.y, ColorBitDepth, 9999) :
 								 SetGraphMode(ScreenSizeX, ScreenSizeY, ColorBitDepth, 9999);
+#endif
+}
+
+int OnSetWindowSizeExtendRate(double ExRateX, double ExRateY) {
+	if (resolutionOverwrite) return SetWindowSizeExtendRate(
+		ExRateX * resolutionOrig.x / resolutionCfg.x,
+		ExRateY * resolutionOrig.y / resolutionCfg.y
+	);
+	return SetWindowSizeExtendRate(ExRateX, ExRateY);
 }
 
 void DxLibWrap::Init(uintptr_t selfModule) {
+#ifdef NO_UNIMPLEMENTED
+	config.WriteComment("DirectX",
+		"Possible values: dx9, dx9ex"
+	);
+	auto dxVer = [](ConfigManager& config) {
+		std::string val(config.ReadValue<std::string>("DirectX", "dx9"));
+		if (val == "dx9") return DX_DIRECT3D_9;
+		if (val == "dx9ex") return DX_DIRECT3D_9EX;
+		return DX_DIRECT3D_9;
+	}(config);
+#else
 	config.WriteComment("DirectX", 
 		"Possible values: dx9, dx9ex, dx11\n"
 		"dx11 is currently unimplemented, will default to dx9ex"
@@ -129,6 +156,7 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 		if (val == "dx11") return DX_DIRECT3D_11;
 		return DX_DIRECT3D_9;
 	}(config);
+#endif
 
 	config.WriteComment("Scaling", 
 		"Possible values: bilinear, nearest, crt\n"
@@ -142,12 +170,16 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 		return DX_FSSCALINGMODE_BILINEAR;
 	}(config);
 
+#ifdef NO_UNIMPLEMENTED
+	auto fitScaling = FALSE;
+#else
 	config.WriteComment("KeepAspectRatio",
 		"Possible values: true, false\n"
 		"Currently does nothing\n"
 		"Meant to tell if the fullscreen image would be stretched to screen horizontally or not"
 	);
 	auto fitScaling = config.ReadValue("KeepAspectRatio", true) ? FALSE : TRUE;
+#endif
 
 	config.WriteComment("FullscreenMode",
 		"Possible values: desktop, borderless, native, maximum"
@@ -169,6 +201,9 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 	);
 	intCoords = config.ReadValue("IntegerCoordinates", false);
 
+#ifdef NO_UNIMPLEMENTED
+	resolutionOverwrite = false;
+#else
 	config.WriteComment("ResolutionEnable",
 		"Possible values: true, false\n"
 		"Enables the system to override render resolution from config values\n"
@@ -182,6 +217,7 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 	);
 	resolutionCfg.x = config.ReadValue("ResolutionX", 0);
 	resolutionCfg.y = config.ReadValue("ResolutionY", 0);
+#endif
 
 	config.SaveConfig(); // Updates the comments in existing config file.
 
@@ -204,7 +240,7 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 	hook(0x50F930, OnSetGraphMode);
 	hook(0x4CDB60, SetWindowSizeChangeEnableFlag);
 	hook(0x4CE100, SetNotSoundFlag);
-	hook(0x4CDBA0, SetWindowSizeExtendRate);
+	hook(0x4CDBA0, OnSetWindowSizeExtendRate);
 	hook(0x517910, SetWaitVSyncFlag);
 	hook(0x4CD7D0, ChangeWindowMode);
 	hook(0x50E810, GetDirectDrawDeviceNum);
