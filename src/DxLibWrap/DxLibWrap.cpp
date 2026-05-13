@@ -308,6 +308,8 @@ void DxLibWrap::Init(uintptr_t selfModule) {
 	hook(0x50DEF0, DerivationGraph);
 	hook(0x4C98B0, FileRead_open);
 	hook(0x4C9A50, FileRead_gets);
+	hook(0x4C99B0, FileRead_read);
+	hook(0x4C98F0, FileRead_size);
 	hook(0x4C9950, FileRead_close);
 	hook(0x511820, SetMovieVolumeToGraph);
 	hook(0x4C86E0, ErrorLogTabSub);
